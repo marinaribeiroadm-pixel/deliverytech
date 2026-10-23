@@ -21,4 +21,16 @@ public class Pedido {
     private BigDecimal taxaEntrega;
     private BigDecimal valorTotal;
  
+    // TO-DO: add campo observação do pedido
+
+/*
+ * implementação de campo de forma de pagamento
+ * (ENUM: DINHEIRO, CARTAO_CREDITO, CARTAO_DEBITO, PIX, OUTROS)
+ */
+
+// Relacionamento com o Cliente
+@ManyToOne
+@JoinColumn(name = "cliente_id")
+private Cliente cliente;
+
 }
