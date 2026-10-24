@@ -4,12 +4,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  
 import jakarta.persistence.*;
 import lombok.Data;
- 
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 import java.util.List;
  
  
 @Data
+@NoArgsConstructor
 @Entity
 public class Cliente {
  
@@ -22,6 +24,7 @@ public class Cliente {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String nome;
+    private String sobrenome;
     private String email;
     private String telefone;
     private String endereco;
@@ -43,5 +46,11 @@ public class Cliente {
    @JsonIgnore
    @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL)
    private List<Pedido> pedidos;
- 
+
+    // construtor usado no ClienteController: new Cliente(nome, sobrenome)
+    public Cliente(String nome, String sobrenome) {
+        this.nome = nome;
+        this.sobrenome = sobrenome;
+    }
+
 }
