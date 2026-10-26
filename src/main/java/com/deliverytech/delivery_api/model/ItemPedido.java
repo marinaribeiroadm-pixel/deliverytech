@@ -20,7 +20,7 @@ public class ItemPedido {
     private BigDecimal precoTotal;
  
     @JsonIgnore
-    @ManyToMany
+    @ManyToOne
     @JoinColumn(name = "pedido_id")
     private Pedido pedido;
  

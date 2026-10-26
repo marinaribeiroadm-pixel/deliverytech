@@ -3,7 +3,7 @@ package com.deliverytech.delivery_api.repository;
 import com.deliverytech.delivery_api.model.Cliente;
 import com.deliverytech.delivery_api.model.Pedido;
  
-import com.deliverytech.delivery_api.enums.StatusPedido;
+import com.deliverytech.delivery_api.controller.enums.StatusPedido;
  
 import org.springframework.stereotype.Repository;
 import org.springframework.data.repository.query.Param;

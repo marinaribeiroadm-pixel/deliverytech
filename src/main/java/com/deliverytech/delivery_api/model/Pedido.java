@@ -1,5 +1,9 @@
 package com.deliverytech.delivery_api.model;
  
+import com.deliverytech.delivery_api.controller.enums.StatusPedido;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import lombok.Data;
  
@@ -20,7 +24,11 @@ public class Pedido {
     private BigDecimal subtotal;
     private BigDecimal taxaEntrega;
     private BigDecimal valorTotal;
- 
+
+    // salva o nome do status (ex: "PENDENTE") no banco em vez do número
+    @Enumerated(EnumType.STRING)
+    private StatusPedido statusPedido;
+
     // TO-DO: add campo observação do pedido
 
 /*
@@ -32,5 +40,15 @@ public class Pedido {
 @ManyToOne
 @JoinColumn(name = "cliente_id")
 private Cliente cliente;
+
+// Relacionamento com o Restaurante
+@ManyToOne
+@JoinColumn(name = "restaurante_id")
+private Restaurante restaurante;
+
+// Itens do pedido; @JsonIgnore evita LazyInitialization ao serializar
+@JsonIgnore
+@OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL)
+private List<ItemPedido> itens;
 
 }
