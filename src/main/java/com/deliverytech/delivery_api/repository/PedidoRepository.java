@@ -1,19 +1,17 @@
 package com.deliverytech.delivery_api.repository;
 
-import com.deliverytech.delivery_api.model.Cliente;
-import com.deliverytech.delivery_api.model.Pedido;
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.deliverytech.delivery_api.enums.StatusPedido;
-
-import org.springframework.stereotype.Repository;
-import org.springframework.data.repository.query.Param;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.jpa.repository.JpaRepository;
-
-import java.util.List; 
-import java.util.Optional;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import com.deliverytech.delivery_api.model.Cliente;
+import com.deliverytech.delivery_api.model.Pedido;
 
 /* Anotação não importa pois o JPA já interpreta 
 automaticamente que não é necessarioa realizar a anotação @Repository
@@ -47,7 +45,13 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
 
 
     // Buscar por número do pedido
-    Pedido findByNumeroPedido(String numeroPedido);
+    List<Pedido> findByStatusPedidoInOrderByDataPedidoAsc(Collection<StatusPedido> status);
+
+    // Buscar por número do pedido — Optional evita retorno null silencioso
+    Optional<Pedido> findByNumeroPedido(String numeroPedido);
+
+    // Útil para validar unicidade do número antes de salvar, se necessário
+    boolean existsByNumeroPedido(String numeroPedido);
 
     /*
     Buscar pedido por ID já trazendo os itens junto (fetch join).
@@ -64,6 +68,9 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     // Buscar pedidos por restaurante
     @Query("SELECT p FROM Pedido p WHERE p.restaurante.id = :restauranteId ORDER BY p.dataPedido DESC")
     List<Pedido> findByRestauranteId(@Param("restauranteId") Long restauranteId);
+
+    // Buscar pedidos de um cliente em um status específico
+    List<Pedido> findByClienteIdAndStatusPedidoOrderByDataPedidoDesc(Long clienteId, StatusPedido statusPedido);
 
     // Relatório - pedidos por status
     @Query("SELECT p.statusPedido, COUNT(p) FROM Pedido p GROUP BY p.statusPedido")
