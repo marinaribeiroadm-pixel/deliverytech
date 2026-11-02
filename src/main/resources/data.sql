@@ -10,6 +10,7 @@ INSERT INTO cliente (nome, email, telefone, endereco, ativo) VALUES
 ('Felipe Almeida',   'felipe.almeida@email.com',   '(51) 96789-0123', 'Rua dos Andradas, 250 - Porto Alegre/RS', TRUE);
 
 -- ============================================================
+--  RESTAURANTES
 -- ============================================================
 INSERT INTO restaurante (nome, categoria, endereco, telefone, taxa_entrega, ativo, avaliacao) VALUES
 ('Sabor Mineiro',   'Brasileira',   'Rua das Acácias, 10 - São Paulo/SP',   '(11) 3000-1111', 6.50,  TRUE,  4.7),

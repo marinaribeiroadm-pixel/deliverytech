@@ -19,6 +19,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import java.util.List;
@@ -35,6 +41,7 @@ pois está utilizando a espressão "*"
 */
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
+@Tag(name = "Clientes", description = " Operações relacionadas aos clientes")
 public class ClienteController {
 
     // injetando o serviço de cliente
@@ -50,6 +57,13 @@ public class ClienteController {
     Anotatio @Valid para validar o objeto cliente recebido no corpo da requisição
     através da anotação @RequestBody, que por sua vez indica que o obketo cliente será enviado no corpo da requisição
     */
+   @Operation(summary = "Cadastras cliente", 
+                description = "Cadastrar um novo cliente no sistema"
+   )
+   @ApiResponses({
+       @ApiResponse(responseCode = "201", description = "Cliente Cadastrado com Sucesso"),
+       @ApiResponse(responseCode = "400", description = "Dados inválidos")
+   })
     public ResponseEntity<ClienteResDTO>
     cadastrarCliente(@Valid 
         @RequestBody ClienteReqDTO dto) {

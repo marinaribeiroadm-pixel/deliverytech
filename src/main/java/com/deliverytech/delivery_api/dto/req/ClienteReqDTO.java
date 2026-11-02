@@ -1,5 +1,6 @@
 package com.deliverytech.delivery_api.dto.req;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 
 public class ClienteReqDTO {
@@ -26,6 +27,12 @@ public class ClienteReqDTO {
     private String telefone;
 
     @NotBlank(message = "Endereço é obrigatório")
+    /*
+        Através das Anotation@Schema usamos para gerar 
+        descrições de exemplo de uso dos nosso DTO
+    */
+    @Schema(description = "Endereço completo do cliene",
+            example = "Rua das Flores, 123 - Centro")
     @Size(max = 200, message = "Endereço deve cnoter no maximo 200 caracteres")
     private String endereco;
 

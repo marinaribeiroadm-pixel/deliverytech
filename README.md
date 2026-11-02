@@ -18,8 +18,8 @@ Sistema de delivery desenvolvido com Spring Boot e Java 21.
 ## 🏃‍♂️ Como executar
 1. **Pré-requisitos:** JDK 21 instalado
 2. Clone o repositório
-1. mvn clean compile
-3. Execute: `mvn spring-boot:run`
+./mvnw clean compile 
+3. Execute: `./mvnw spring-boot:run`
 4. Acesse: http://localhost:8080/health
 
 ## 📋 Endpoints
@@ -33,5 +33,5 @@ Sistema de delivery desenvolvido com Spring Boot e Java 21.
 - Profile: development
 
 ## 👨‍💻 Desenvolvedor
-[Seu Nome] - [Sua Turma]
+[Anderson K. Demoner] - [Arquitetura de Sistemas Distribuidos]
 Desenvolvido com JDK 21 e Spring Boot 3.2.x

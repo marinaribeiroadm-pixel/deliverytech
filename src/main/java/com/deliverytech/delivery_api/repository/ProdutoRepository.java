@@ -34,6 +34,12 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
     List<Produto> findByDisponivelTrueOrderByPrecoAsc();
     List<Produto> findByDisponivelTrueOrderByPrecoDesc();
 
+    List<Produto> findByCategoriaAndDisponivelTrue(String categoria);
+
+    List<Produto> findByNomeContainingIgnoreCase(String nome);
+    
+    List<Produto> findByRestauranteIdAndDisponivel(Long restauranteId, Boolean disponivel);
+
     // Query customizada - produtos mais vendidos
     @Query("""
         SELECT ip.produto 
@@ -61,3 +67,4 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
                "LIMIT 10", nativeQuery = true)
     List<Object[]> rankingClientesPorPedidos();
 }
+
