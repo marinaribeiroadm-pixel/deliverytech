@@ -12,7 +12,8 @@ import com.deliverytech.delivery_api.model.Cliente;
 import com.deliverytech.delivery_api.repository.ClienteRepository;
 import com.deliverytech.delivery_api.service.ClienteService;
 
-import jakarta.persistence.EntityNotFoundException;
+import com.deliverytech.delivery_api.exeption.BusinessException;
+import com.deliverytech.delivery_api.exeption.EntityNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -33,7 +34,7 @@ public class ClienteServiceImpl implements ClienteService {
     public ClienteResDTO cadastrarCliente(ClienteReqDTO dto) {
         // regra de negocios validação de email unico
         if (clienteRepository.findByEmail(dto.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("Email já cadastrato: " + dto.getEmail());
+            throw new BusinessException("Email já cadastrado: " + dto.getEmail());
         }
 
         // convertendo o DTO em Entidade
@@ -74,7 +75,7 @@ public class ClienteServiceImpl implements ClienteService {
         // Validar email único (se mudou)
         if (!cliente.getEmail().equals(dto.getEmail()) &&
             clienteRepository.findByEmail(dto.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("Email já cadastrado: " + dto.getEmail());
+            throw new BusinessException("Email já cadastrado: " + dto.getEmail());
         }
 
         // Atualizar dados
