@@ -8,6 +8,9 @@ import com.deliverytech.delivery_api.dto.req.PedidoReqDTO;
 import com.deliverytech.delivery_api.dto.res.PedidoResDTO;
 import com.deliverytech.delivery_api.enums.StatusPedido;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
+
 /*
  * Contrato da camada de serviço de Pedido.
  *
@@ -28,5 +31,9 @@ public interface PedidoService {
     BigDecimal calcularTotalPedido(List<ItemPedidoReqDTO> itens);
 
     void cancelarPedido(Long id);
+
+    Page<PedidoResDTO> listarPorCliente(Long clienteId, Pageable pageable);
+
+    Page<PedidoResDTO> listarMeusPedidos(String emailUsuario, Pageable pageable);
 
 }

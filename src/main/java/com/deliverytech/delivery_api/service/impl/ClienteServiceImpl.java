@@ -8,12 +8,12 @@ import java.util.stream.Collectors;
 import org.modelmapper.ModelMapper;
 import com.deliverytech.delivery_api.dto.req.ClienteReqDTO;
 import com.deliverytech.delivery_api.dto.res.ClienteResDTO;
+import com.deliverytech.delivery_api.exeption.BusinessException;
+import com.deliverytech.delivery_api.exeption.EntityNotFoundException;
 import com.deliverytech.delivery_api.model.Cliente;
 import com.deliverytech.delivery_api.repository.ClienteRepository;
 import com.deliverytech.delivery_api.service.ClienteService;
 
-import com.deliverytech.delivery_api.exeption.BusinessException;
-import com.deliverytech.delivery_api.exeption.EntityNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;

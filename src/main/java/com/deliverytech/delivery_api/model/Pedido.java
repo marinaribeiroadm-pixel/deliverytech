@@ -41,6 +41,10 @@ public class Pedido {
     @Enumerated(EnumType.STRING)
     private StatusPedido statusPedido;
 
+    // Endereço informado pelo cliente no momento do pedido (PedidoReqDTO.enderecoEntrega)
+    @Column(length = 200)
+    private String enderecoEntrega;
+
     // Relacionamento com o Cliente
     @ManyToOne
     @JoinColumn(name = "cliente_id")

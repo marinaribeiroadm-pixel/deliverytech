@@ -84,16 +84,8 @@ public class ClienteController {
     Buscar cliente por ID
     */
     @GetMapping("/{id}")
-    public ResponseEntity<?> buscarPorId(@PathVariable Long id,
-        @Valid @RequestBody ClienteReqDTO dto
-    ) {
-        ClienteResDTO cliente = clienteService.atualizarCliente(id, dto);
-
-        if (cliente != null) {
-            return ResponseEntity.ok(cliente);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<ClienteResDTO> buscarPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(clienteService.buscarClientePorId(id));
     }
 
     /*

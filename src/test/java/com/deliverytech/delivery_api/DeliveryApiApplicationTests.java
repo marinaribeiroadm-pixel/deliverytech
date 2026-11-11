@@ -8,8 +8,8 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest(properties = "jwt.secret=chave-de-teste-ficticia-com-pelo-menos-32-bytes!!")
 class DeliveryApiApplicationTests {
 
-    @Test
-    void contextLoads() {
-    }
+	@Test
+	void contextLoads() {
+	}
 
 }

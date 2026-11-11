@@ -3,15 +3,22 @@ package com.deliverytech.delivery_api.service.impl;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.deliverytech.delivery_api.dto.req.ItemPedidoReqDTO;
 import com.deliverytech.delivery_api.dto.req.PedidoReqDTO;
 import com.deliverytech.delivery_api.dto.res.PedidoResDTO;
 import com.deliverytech.delivery_api.enums.StatusPedido;
+import com.deliverytech.delivery_api.exeption.BusinessException;
+import com.deliverytech.delivery_api.exeption.EntityNotFoundException;
 import com.deliverytech.delivery_api.model.Cliente;
 import com.deliverytech.delivery_api.model.ItemPedido;
 import com.deliverytech.delivery_api.model.Pedido;
@@ -23,21 +30,16 @@ import com.deliverytech.delivery_api.repository.ProdutoRepository;
 import com.deliverytech.delivery_api.repository.RestauranteRepository;
 import com.deliverytech.delivery_api.service.PedidoService;
 
-import jakarta.persistence.EntityNotFoundException;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.lang.reflect.Method;
-
+/*
+ * Exceções:
+ * - EntityNotFoundException (do pacote exeption, NÃO a do jakarta.persistence) -> 404
+ * - BusinessException (regra de negócio violada) -> 400
+ * O GlobalExceptionHandler só conhece essas duas; qualquer outra vira 500.
+ */
 @Service
-@Transactional 
-public class PedidoServiceImpl implements PedidoService  {
-    
+@Transactional
+public class PedidoServiceImpl implements PedidoService {
+
     @Autowired
     private PedidoRepository pedidoRepository;
 
@@ -54,117 +56,103 @@ public class PedidoServiceImpl implements PedidoService  {
     private ModelMapper modelMapper;
 
     @Override
-    @Transactional
     public PedidoResDTO criarPedido(PedidoReqDTO dto) {
         // 1. Validar cliente existe e está ativo
         Cliente cliente = clienteRepository.findById(dto.getClienteId())
-        /*
-        .orElseThrow se ele não encontrar eke vai lançar um execessão
-        através da entidade EntityNotFoundException
-        informando a message, Cliente não encontrado
-        */
-            .orElseThrow(() -> new EntityNotFoundException("Cliente não encontrado"));
+            .orElseThrow(() -> new EntityNotFoundException("Cliente", dto.getClienteId()));
 
-        /*
-        Se eencontrar ele vai buscar dentro do nosso condicional o nosso if orElseThrow
-        se esse cliente não está ativo lança uma execessão passando msg
-        (!cliente está diferente de ativo)
-        */
         if (!cliente.isAtivo()) {
-            throw new IllegalArgumentException("Cliente inativo não pode fazer pedidos");
+            throw new BusinessException("Cliente inativo não pode fazer pedidos");
         }
 
         // 2. Validar restaurante existe e está ativo
         Restaurante restaurante = restauranteRepository.findById(dto.getRestauranteId())
-            .orElseThrow(() -> new EntityNotFoundException("Restaurante não encontrado"));
+            .orElseThrow(() -> new EntityNotFoundException("Restaurante", dto.getRestauranteId()));
 
         if (!restaurante.isAtivo()) {
-            throw new IllegalArgumentException("Restaurante não está disponível");
+            throw new BusinessException("Restaurante não está disponível");
         }
 
-        // 3. Validar todos os produtos existem e estão disponíveis
+        Pedido pedido = new Pedido();
+
+        // 3. Validar produtos e montar os itens com o preço vigente do produto
         List<ItemPedido> itensPedido = new ArrayList<>();
         BigDecimal subtotal = BigDecimal.ZERO;
 
         for (ItemPedidoReqDTO itemDTO : dto.getItens()) {
             Produto produto = produtoRepository.findById(itemDTO.getProdutoId())
-                .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado: " + itemDTO.getProdutoId()));
+                .orElseThrow(() -> new EntityNotFoundException("Produto", itemDTO.getProdutoId()));
 
             if (!produto.isDisponivel()) {
-                throw new IllegalArgumentException("Produto indisponível: " + produto.getNome());
+                throw new BusinessException("Produto indisponível: " + produto.getNome());
             }
 
-            if (!produto.getRestaurante().getId().equals(dto.getRestauranteId())) {
-                throw new IllegalArgumentException("Produto não pertence ao restaurante selecionado");
+            if (produto.getRestaurante() == null
+                    || !produto.getRestaurante().getId().equals(restaurante.getId())) {
+                throw new BusinessException("Produto não pertence ao restaurante selecionado");
             }
-        
-    }
 
-        // 4. Calcular total do pedido
-        BigDecimal taxaEntrega = restaurante.getTaxaEntrega();
-        BigDecimal valorTotal = subtotal.add(taxaEntrega);
+            BigDecimal precoTotal = produto.getPreco()
+                .multiply(BigDecimal.valueOf(itemDTO.getQuantidade()));
 
-        // 5. Salvar pedido
-        Pedido pedido = new Pedido();
+            ItemPedido item = new ItemPedido();
+            item.setPedido(pedido);
+            item.setProduto(produto);
+            item.setQuantidade(itemDTO.getQuantidade());
+            item.setPrecoUnitario(produto.getPreco());
+            item.setPrecoTotal(precoTotal);
+            itensPedido.add(item);
+
+            subtotal = subtotal.add(precoTotal);
+        }
+
+        // 4. Calcular total do pedido (taxa nula é tratada como zero)
+        BigDecimal taxaEntrega = restaurante.getTaxaEntrega() != null
+            ? restaurante.getTaxaEntrega()
+            : BigDecimal.ZERO;
+
+        // 5. Salvar pedido; os itens são persistidos pelo cascade de Pedido.itens
+        pedido.setNumeroPedido(gerarNumeroPedido());
         pedido.setCliente(cliente);
         pedido.setRestaurante(restaurante);
         pedido.setDataPedido(LocalDateTime.now());
-        setPedidoStatus(pedido, StatusPedido.PENDENTE);
-        setProperty(pedido, "EnderecoEntrega", dto.getEnderecoEntrega());
+        pedido.setStatusPedido(StatusPedido.PENDENTE);
+        pedido.setEnderecoEntrega(dto.getEnderecoEntrega());
+        pedido.setItens(itensPedido);
         pedido.setSubtotal(subtotal);
         pedido.setTaxaEntrega(taxaEntrega);
-        pedido.setValorTotal(valorTotal);
+        pedido.setValorTotal(subtotal.add(taxaEntrega));
 
         Pedido pedidoSalvo = pedidoRepository.save(pedido);
 
-        // 6. Salvar itens do pedido
-        for (ItemPedido item : itensPedido) {
-            item.setPedido(pedidoSalvo);
-        }
-        pedidoSalvo.setItens(itensPedido);
-
-        // 7. Atualizar estoque (se aplicável) - Simulação
-        // Em um cenário real, aqui seria decrementado o estoque
-
-        // 8. Retornar pedido criado
         return modelMapper.map(pedidoSalvo, PedidoResDTO.class);
     }
 
     @Override
     @Transactional(readOnly = true)
     public PedidoResDTO buscarPedidoPorId(Long id) {
-        Pedido pedido = pedidoRepository.findById(id)
-            .orElseThrow(() -> new EntityNotFoundException("Pedido não encontrado com ID: " + id));
-
-        return modelMapper.map(pedido, PedidoResDTO.class);
+        return modelMapper.map(buscarPedido(id), PedidoResDTO.class);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<PedidoResDTO> buscarPedidosPorCliente(Long clienteId) {
-        List<Pedido> pedidos = pedidoRepository.findAll().stream()
-            .filter(pedido -> pedido.getCliente() != null
-                && clienteId.equals(pedido.getCliente().getId()))
-            .collect(Collectors.toList());
-
-        return pedidos.stream()
+        // Consulta filtrada no banco (antes era findAll() + filtro em memória)
+        return pedidoRepository.findByClienteIdComItens(clienteId).stream()
             .map(pedido -> modelMapper.map(pedido, PedidoResDTO.class))
-            .collect(Collectors.toList());
+            .toList();
     }
 
     @Override
     public PedidoResDTO atualizarStatusPedido(Long id, StatusPedido novoStatus) {
-        Pedido pedido = pedidoRepository.findById(id)
-            .orElseThrow(() -> new EntityNotFoundException("Pedido não encontrado"));
+        Pedido pedido = buscarPedido(id);
 
-        // Validar transições de status permitidas
-        StatusPedido statusAtual = getPedidoStatus(pedido);
+        StatusPedido statusAtual = pedido.getStatusPedido();
         if (!isTransicaoValida(statusAtual, novoStatus)) {
-            throw new IllegalArgumentException("Transição de status inválida: " +
-            statusAtual + " -> " + novoStatus);
+            throw new BusinessException("Transição de status inválida: " + statusAtual + " -> " + novoStatus);
         }
 
-        setPedidoStatus(pedido, novoStatus);
+        pedido.setStatusPedido(novoStatus);
         Pedido pedidoAtualizado = pedidoRepository.save(pedido);
 
         return modelMapper.map(pedidoAtualizado, PedidoResDTO.class);
@@ -177,11 +165,9 @@ public class PedidoServiceImpl implements PedidoService  {
 
         for (ItemPedidoReqDTO item : itens) {
             Produto produto = produtoRepository.findById(item.getProdutoId())
-                .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Produto", item.getProdutoId()));
 
-            BigDecimal subtotalItem = produto.getPreco()
-                .multiply(BigDecimal.valueOf(item.getQuantidade()));
-            total = total.add(subtotalItem);
+            total = total.add(produto.getPreco().multiply(BigDecimal.valueOf(item.getQuantidade())));
         }
 
         return total;
@@ -189,69 +175,60 @@ public class PedidoServiceImpl implements PedidoService  {
 
     @Override
     public void cancelarPedido(Long id) {
-        Pedido pedido = pedidoRepository.findById(id)
-            .orElseThrow(() -> new EntityNotFoundException("Pedido não encontrado"));
+        Pedido pedido = buscarPedido(id);
 
-        StatusPedido statusAtual = getPedidoStatus(pedido);
+        StatusPedido statusAtual = pedido.getStatusPedido();
         if (!podeSerCancelado(statusAtual)) {
-            throw new IllegalArgumentException("Pedido não pode ser cancelado no status: " + statusAtual);
+            throw new BusinessException("Pedido não pode ser cancelado no status: " + statusAtual);
         }
 
-        setPedidoStatus(pedido, StatusPedido.CANCELADO);
+        pedido.setStatusPedido(StatusPedido.CANCELADO);
         pedidoRepository.save(pedido);
     }
 
-    private StatusPedido getPedidoStatus(Pedido pedido) {
-        Object status = getProperty(pedido, "Status");
-        return status instanceof StatusPedido ? (StatusPedido) status : null;
+    @Override
+    @Transactional(readOnly = true)
+    public Page<PedidoResDTO> listarPorCliente(Long clienteId, Pageable pageable) {
+        return pedidoRepository.findByClienteIdOrderByDataPedidoDesc(clienteId, pageable)
+            .map(p -> modelMapper.map(p, PedidoResDTO.class));
     }
 
-    private void setPedidoStatus(Pedido pedido, StatusPedido status) {
-        setProperty(pedido, "Status", status);
+    @Override
+    @Transactional(readOnly = true)
+    public Page<PedidoResDTO> listarMeusPedidos(String emailUsuario, Pageable pageable) {
+        Cliente cliente = clienteRepository.findByEmail(emailUsuario)
+            .orElseThrow(() -> new EntityNotFoundException("Cliente não encontrado para o usuário autenticado"));
+        return listarPorCliente(cliente.getId(), pageable);
     }
 
-    private Object getProperty(Object target, String property) {
-        try {
-            Method method = target.getClass().getMethod("get" + property);
-            return method.invoke(target);
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalArgumentException("Propriedade não encontrada: " + property);
-        }
+    // ---------------------------------------------------------------------
+    // Auxiliares
+    // ---------------------------------------------------------------------
+
+    private Pedido buscarPedido(Long id) {
+        return pedidoRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("Pedido não encontrado com ID: " + id));
     }
 
-    private void setProperty(Object target, String property, Object value) {
-        try {
-            for (Method method : target.getClass().getMethods()) {
-                if (method.getName().equals("set" + property) && method.getParameterCount() == 1) {
-                    method.invoke(target, value);
-                    return;
-                }
-            }
-            throw new NoSuchMethodException(property);
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalArgumentException("Propriedade não encontrada: " + property);
-        }
+    // Número legível e único o bastante para identificar o pedido (ex.: PED-1A2B3C4D)
+    private String gerarNumeroPedido() {
+        return "PED-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
     private boolean isTransicaoValida(StatusPedido statusAtual, StatusPedido novoStatus) {
-        // Implementar lógica de transições válidas
-        switch (statusAtual) {
-            case PENDENTE:
-                return novoStatus == StatusPedido.CONFIRMADO || novoStatus == StatusPedido.CANCELADO;
-            case CONFIRMADO:
-                return novoStatus == StatusPedido.PREPARANDO || novoStatus == StatusPedido.CANCELADO;
-            case PREPARANDO:
-                return novoStatus == StatusPedido.SAIU_PARA_ENTREGA;
-            case SAIU_PARA_ENTREGA:
-                return novoStatus == StatusPedido.ENTREGUE;
-            default:
-                return false;
+        if (statusAtual == null || novoStatus == null) {
+            return false;
         }
+        return switch (statusAtual) {
+            case PENDENTE -> novoStatus == StatusPedido.CONFIRMADO || novoStatus == StatusPedido.CANCELADO;
+            case CONFIRMADO -> novoStatus == StatusPedido.PREPARANDO || novoStatus == StatusPedido.CANCELADO;
+            case PREPARANDO -> novoStatus == StatusPedido.SAIU_PARA_ENTREGA;
+            case SAIU_PARA_ENTREGA -> novoStatus == StatusPedido.ENTREGUE;
+            default -> false;
+        };
     }
 
     private boolean podeSerCancelado(StatusPedido status) {
         return status == StatusPedido.PENDENTE || status == StatusPedido.CONFIRMADO;
     }
-
 }
-

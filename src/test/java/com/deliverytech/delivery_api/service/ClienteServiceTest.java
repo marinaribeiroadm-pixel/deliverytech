@@ -52,7 +52,7 @@ public class ClienteServiceTest {
         cliente.setEmail("joao@email.com");
         cliente.setTelefone("11999999999");
         cliente.setEndereco("Rua A, 100");
-        cliente.setAtivo(true);
+        cliente.setAtivo(true);  
     }
 
     private ClienteReqDTO criarDto() {
@@ -75,7 +75,7 @@ public class ClienteServiceTest {
             c.setId(1L);
             return c;
         });
-
+    
         // When
         ClienteResDTO resultado = clienteService.cadastrarCliente(dto);
 
