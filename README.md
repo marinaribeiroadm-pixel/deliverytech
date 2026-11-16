@@ -32,5 +32,5 @@ Sistema de delivery desenvolvido com Spring Boot e Java 21.
 - Profile: development
 
 ## 👨‍💻 Desenvolvedor
-[Anderson K. Demoner] - [Arquitetura de Sistemas Distribuidos]
+[Marina R Silva] - [Arquitetura de Sistemas Distribuidos]
 Desenvolvido com JDK 21 e Spring Boot 3.2.x
