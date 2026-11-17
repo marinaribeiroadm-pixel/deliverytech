@@ -103,6 +103,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/restaurantes").permitAll()
                 .requestMatchers("/api/produtos").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
+                .requestMatchers("/actuator/metrics").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
 
                 // Demais endpoints

@@ -10,7 +10,7 @@ info:
   team:
     name: Equipe de Desenvolvimento
     email: dev@delivery.com
- 
+
 # Configuração consolidada do Spring Boot Actuator e Tracing
 management:
   endpoints:
@@ -51,12 +51,12 @@ management:
   zipkin:
     tracing:
       endpoint: "http://localhost:9411/api/v2/spans"
- 
+
 # Configuração de segurança para endpoints
 #  A configuração de segurança para os endpoints do Actuator foi consolidada aqui.
 #  O usuário e senha podem ser configurados via variáveis de ambiente ou diretamente no arquivo.
 #  As roles podem ser ajustadas conforme necessário.
-#  Lembre-se de substituir os valores de nome e senha por variáveis de ambiente
+#  Lembre-se de substituir os valores de nome e senha por variáveis de ambiente 
 #  Dentro do .env ou valores seguros antes de colocar em produção.
 spring:
   security:
@@ -64,7 +64,7 @@ spring:
       name: # ${ACTUATOR_USER}
       password: # ${ACTUATOR_PASSWORD}
       roles: ACTUATOR
- 
+
 jwt:
   secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION}

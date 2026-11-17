@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard - Sistema de Delivery</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .metric-card {
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2196F3;
+        }
+        .metric-label {
+            color: #666;
+            margin-top: 5px;
+        }
+        .chart-container {
+            width: 100%;
+            height: 300px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Dashboard de Monitoramento - Sistema de Delivery</h1>
+
+    <div class="dashboard-grid">
+        <div class="metric-card">
+            <div class="metric-value" id="pedidos-total">0</div>
+            <div class="metric-label">Pedidos Processados</div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-value" id="receita-total">R$ 0,00</div>
+            <div class="metric-label">Receita Total</div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-value" id="usuarios-ativos">0</div>
+            <div class="metric-label">Usuários Ativos</div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-value" id="tempo-medio">0ms</div>
+            <div class="metric-label">Tempo Médio de Resposta</div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid" style="margin-top: 30px;">
+        <div class="metric-card">
+            <h3>Pedidos por Status</h3>
+            <div class="chart-container">
+                <canvas id="pedidos-chart"></canvas>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <h3>Performance do Sistema</h3>
+            <div class="chart-container">
+                <canvas id="performance-chart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Função para buscar métricas
+        async function fetchMetrics() {
+            try {
+                const response = await fetch('/dashboard/api/metrics');
+                const data = await response.json();
+                updateDashboard(data);
+            } catch (error) {
+                console.error('Erro ao buscar métricas:', error);
+            }
+        }
+
+        // Função para atualizar dashboard
+        function updateDashboard(data) {
+            document.getElementById('pedidos-total').textContent = Math.round(data.pedidos_total || 0);
+            document.getElementById('receita-total').textContent = 'R$ ' + (data.receita_total || 0).toFixed(2);
+            document.getElementById('usuarios-ativos').textContent = Math.round(data.usuarios_ativos || 0);
+            document.getElementById('tempo-medio').textContent = Math.round(data.tempo_medio_pedido || 0) + 'ms';
+
+            updateCharts(data);
+        }
+
+        // Configurar gráficos
+        const pedidosChart = new Chart(document.getElementById('pedidos-chart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Sucesso', 'Erro'],
+                datasets: [{
+                    data: [0, 0],
+                    backgroundColor: ['#4CAF50', '#F44336']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        function updateCharts(data) {
+            // Atualizar gráfico de pedidos
+            pedidosChart.data.datasets[0].data = [
+                data.pedidos_sucesso || 0,
+                data.pedidos_erro || 0
+            ];
+            pedidosChart.update();
+        }
+
+        // Atualizar a cada 5 segundos
+        setInterval(fetchMetrics, 5000);
+
+        // Carregar dados iniciais
+        fetchMetrics();
+    </script>
+</body>
+</html>
