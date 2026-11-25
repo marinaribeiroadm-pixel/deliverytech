@@ -1,0 +1,9 @@
+target/
+logs/
+demo/
+.git/
+.aws/
+.env
+.vscode/
+.idea/
+*.log

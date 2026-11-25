@@ -1,0 +1,54 @@
+services:
+
+  # API do DeliveryTech
+  delivery-api:
+    build: .
+    container_name: delivery-api
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env                      # JWT_SECRET e JWT_EXPIRATION
+    environment:
+      # Dentro do Docker, "localhost" é o próprio container;
+      # o Redis é encontrado pelo nome do serviço
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      # MySQL também é encontrado pelo nome do serviço
+      DB_HOST: mysql
+      DB_PORT: 3306
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./logs:/app/logs          # mantém os logs na pasta logs/ do projeto
+
+  # MySQL (banco de dados)
+  mysql:
+    image: mysql:8.4
+    container_name: delivery-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Redis (cache distribuído)
+  redis:
+    image: redis:7-alpine
+    container_name: delivery-redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  mysql-data:
