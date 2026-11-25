@@ -104,6 +104,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/produtos").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers("/actuator/metrics").permitAll()
+                .requestMatchers("/actuator/prometheus").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
 
                 // Demais endpoints
